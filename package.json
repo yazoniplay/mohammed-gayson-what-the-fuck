@@ -1,0 +1,29 @@
+{
+  "name":"jack-pockets-autovideo",
+  "version":"0.1.0",
+  "private":true,
+  "type":"module",
+  "scripts":{
+    "generate":"python scripts/generate.py",
+    "render":"remotion render src/index.tsx JackPocketsVideo out/video.mp4",
+    "preview":"remotion studio src/index.tsx",
+    "typecheck":"tsc --noEmit",
+    "lint":"eslint ."
+  },
+  "dependencies":{
+    "@remotion/cli":"latest",
+    "@remotion/captions":"latest",
+    "remotion":"latest",
+    "react":"latest",
+    "react-dom":"latest",
+    "zod":"latest"
+  },
+  "devDependencies":{
+    "@types/react":"latest",
+    "@types/react-dom":"latest",
+    "@typescript-eslint/eslint-plugin":"latest",
+    "@typescript-eslint/parser":"latest",
+    "eslint":"latest",
+    "typescript":"latest"
+  }
+}
