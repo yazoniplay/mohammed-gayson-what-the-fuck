@@ -3,7 +3,7 @@ import argparse,json,re,subprocess
 from pathlib import Path
 from llm import generate
 from tts import synthesize
-from assets import search_pexels
+from assets import search_pexels,make_asset_plan,generate_role_asset
 from research import search_web
 from manifest import build
 from quality import validate
@@ -26,9 +26,20 @@ def main():
  words=json.loads((root/"alignment.json").read_text());asset_sets=[]
  for i,b in enumerate(plan.get("beats",[])):
   aset=[]
-  for q in list(dict.fromkeys((b.get("keywords") or [a.topic]) + [str(b.get("narration",""))[:120]]))[:a.assets_per_beat]:
+  editorial=b.get("editorial") or {}
+  narration=str(b.get("narration",""))
+  roles=make_asset_plan(narration,editorial)
+  generated_dir=root/"generated"
+  for j,r in enumerate(roles):
+   item=generate_role_asset(r["role"],narration,generated_dir,research,i*10+j)
+   if item:
+    item["src"]=str(Path(item["src"]).relative_to("public")).replace("\\","/")
+    aset.append(item)
+  photo_queries=list(dict.fromkeys((b.get("keywords") or [a.topic]) + [narration[:160]]))
+  for q in photo_queries[:max(1,a.assets_per_beat)]:
    for item in search_pexels(str(q),root/f"assets-{i}",limit=1):
-    item["src"]=str(Path(item["src"]).relative_to("public")).replace("\\","/");aset.append(item)
+    item["src"]=str(Path(item["src"]).relative_to("public")).replace("\\","/")
+    aset.append(item)
   asset_sets.append(aset)
  manifest=build(plan,str(audio.relative_to("public")).replace("\\","/"),words,asset_sets,PROFILES[a.profile],root/"manifest.json")
  errors=validate(str(manifest))
