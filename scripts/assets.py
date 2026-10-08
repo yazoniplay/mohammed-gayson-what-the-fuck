@@ -76,6 +76,20 @@ def generate_role_asset(role:str,narration:str,out:Path,research:list[dict]|None
     elif role=="map":
         svg=f'<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="1920" height="1080" fill="#0a0a0a"/><path d="M220 700 L400 430 L690 300 L980 390 L1210 270 L1510 470 L1680 730 L1450 870 L1040 820 L710 900 L390 820 Z" fill="#171717" stroke="#777" stroke-width="5"/><circle cx="980" cy="520" r="24" fill="#f5d76e"/><circle cx="980" cy="520" r="55" fill="none" stroke="#f5d76e" stroke-opacity=".35" stroke-width="5"/><text x="150" y="160" fill="#fff" font-family="Arial" font-size="40" font-weight="800">LOCATION</text><text x="150" y="235" fill="#fff" font-family="Arial" font-size="62" font-weight="900">{_safe(narration[:65])}</text></svg>'
     else:
-        return None
+        # Always provide a real visual fallback when stock footage is unavailable.
+        # This prevents a valid render from becoming a completely black video.
+        label = role.upper().replace("-", " ")
+        title = _safe(narration[:78])
+        body = _safe("Editorial visual generated from the narration. Stock footage can replace this asset when Pexels is configured.")
+        svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#151515"/><stop offset="1" stop-color="#050505"/></linearGradient><radialGradient id="glow"><stop stop-color="#f5d76e" stop-opacity=".22"/><stop offset="1" stop-color="#f5d76e" stop-opacity="0"/></radialGradient></defs>
+<rect width="1920" height="1080" fill="url(#bg)"/><circle cx="1540" cy="280" r="560" fill="url(#glow)"/>
+<rect x="92" y="92" width="1736" height="896" rx="34" fill="#0d0d0d" fill-opacity=".72" stroke="#555" stroke-width="2"/>
+<rect x="92" y="92" width="14" height="896" fill="#f5d76e"/>
+<text x="150" y="190" fill="#f5d76e" font-family="Arial,sans-serif" font-size="34" font-weight="800" letter-spacing="6">{label}</text>
+<text x="150" y="330" fill="#fff" font-family="Arial,sans-serif" font-size="68" font-weight="900">{title}</text>
+<text x="150" y="900" fill="#999" font-family="Arial,sans-serif" font-size="28">{body}</text>
+<circle cx="1530" cy="600" r="150" fill="none" stroke="#f5d76e" stroke-opacity=".45" stroke-width="5"/><circle cx="1530" cy="600" r="70" fill="#f5d76e" fill-opacity=".15" stroke="#f5d76e" stroke-width="3"/>
+</svg>'''
     path.write_text(svg,encoding="utf-8")
     return {"id":f"generated-{index}-{role.replace(' ','-')}","kind":"generated","src":str(path),"role":role,"score":1.0,"credit":"Generated editorial graphic"}
