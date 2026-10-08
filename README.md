@@ -1,12 +1,17 @@
-# AutoVideo — Pro Documentary Engine
+# AutoVideo — Editorial Brain
 
-This is a high-end automated documentary editor: research/script planning, narration, word alignment, asset retrieval, edit planning, manifest generation, quality validation and Remotion rendering.
+An automated documentary editor built around editorial decisions rather than slideshow assembly.
 
-It is designed around the **general craft principles** of modern fast-paced documentary editing: aggressive pacing, editorial hierarchy, documentary evidence, kinetic typography, controlled camera motion, punchy transitions, sound-aware timing and visual variety.
+The system uses narration as the timeline backbone, classifies each sentence, selects a visual intent, creates shot boundaries, builds layered compositions, and validates the resulting timeline before rendering.
 
-It does **not** reproduce any creator's exact signature style or proprietary edit decisions.
+It targets the broad craft of modern fast-paced documentary/video-essay editing: evidence-led visuals, kinetic typography, punch-ins, annotations, controlled transitions, deliberate reveals and sound-aware rhythm. It does not reproduce any named creator's exact signature style.
+
+## Pipeline
+
+TOPIC → RESEARCH → STORY → NARRATION → WORD ALIGNMENT → EDITORIAL BRAIN → ASSET PLAN → SHOT PLAN → QUALITY GATE → REMOTION
 
 ## Run
+
 ```bash
 npm install
 python -m pip install -r requirements.txt
@@ -14,22 +19,15 @@ cp .env.example .env
 npm run generate -- --topic "Why abandoned malls disappeared"
 ```
 
-## Optional providers
-OPENAI_API_KEY or ANTHROPIC_API_KEY, ELEVENLABS_API_KEY + ELEVENLABS_VOICE_ID, PEXELS_API_KEY, TAVILY_API_KEY.
+## Profiles
 
-The pipeline creates an editable run under `public/runs/<topic>/` and renders to `out/`.
+```bash
+npm run generate -- --topic "..." --profile youtube
+npm run generate -- --topic "..." --profile shorts
+npm run generate -- --topic "..." --profile square
+npm run generate -- --topic "..." --profile 4k
+```
 
-## Production layers
-- research grounding
-- story beat architecture
-- narration
-- word-level timing
-- asset search
-- automatic edit planning
-- captions
-- overlays
-- music ducking hook
-- quality gate
-- multi-format rendering
+Optional providers: OPENAI_API_KEY or ANTHROPIC_API_KEY, ELEVENLABS_API_KEY + ELEVENLABS_VOICE_ID, PEXELS_API_KEY and TAVILY_API_KEY.
 
-The renderer intentionally avoids bundled copyrighted media. Supply assets you have rights to use.
+No copyrighted media is bundled. Use assets you have rights to use.
