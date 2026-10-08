@@ -56,19 +56,26 @@ def generate_role_asset(role:str,narration:str,out:Path,research:list[dict]|None
         source_title=source.get("title","Research source") if source else "Research source"
         source_url=source.get("url","") if source else ""
         body=(snippet[:420] or "Evidence treatment generated from the research context.")
-        body += f"\\n\\nSOURCE: {source_title}"
-        if source_url: body += f"\\n{source_url}"
+        body += f"\n\nSOURCE: {source_title}"
+        if source_url: body += f"\n{source_url}"
         svg=_svg("SOURCE / DOCUMENT",narration[:72],body)
     elif role=="screenshot":
         svg=_svg("SCREEN / ONLINE",narration[:72],"A stylized source surface used to visualize an online claim or interface without fabricating a real screenshot.")
     elif role=="chart":
         nums=re.findall(r"\d+(?:\.\d+)?%?|\$?\d+(?:\.\d+)?\s*(?:million|billion|thousand)",narration,re.I)
-        bars="".join(f'<rect x="{260+i*250}" y="{780-int(float(re.sub(r"[^0-9.]","",n) or 10))*3}" width="110" height="{min(500,int(float(re.sub(r"[^0-9.]","",n) or 10))*3)}" rx="12" fill="#f5d76e"/>' for i,n in enumerate(nums[:6]))
-        svg=f'<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="1920" height="1080" fill="#090909"/><text x="150" y="150" fill="#fff" font-family="Arial" font-size="40" font-weight="800">DATA / SCALE</text><text x="150" y="235" fill="#fff" font-family="Arial" font-size="62" font-weight="900">{_safe(narration[:55])}</text><line x1="220" y1="820" x2="1700" y2="820" stroke="#555" stroke-width="3"/>{bars or '<rect x="300" y="500" width="900" height="180" rx="20" fill="#f5d76e" opacity=".8"/>'}</svg>'
+        bar_parts=[]
+        for i,n in enumerate(nums[:6]):
+            raw=re.sub(r"[^0-9.]","",n)
+            value=float(raw or 10)
+            height=min(500,int(value*3))
+            y=780-height
+            bar_parts.append(f'<rect x="{260+i*250}" y="{y}" width="110" height="{height}" rx="12" fill="#f5d76e"/>')
+        bars="".join(bar_parts)
+        fallback='<rect x="300" y="500" width="900" height="180" rx="20" fill="#f5d76e" opacity=".8"/>'
+        svg=f'<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="1920" height="1080" fill="#090909"/><text x="150" y="150" fill="#fff" font-family="Arial" font-size="40" font-weight="800">DATA / SCALE</text><text x="150" y="235" fill="#fff" font-family="Arial" font-size="62" font-weight="900">{_safe(narration[:55])}</text><line x1="220" y1="820" x2="1700" y2="820" stroke="#555" stroke-width="3"/>{bars or fallback}</svg>'
     elif role=="map":
         svg=f'<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="1920" height="1080" fill="#0a0a0a"/><path d="M220 700 L400 430 L690 300 L980 390 L1210 270 L1510 470 L1680 730 L1450 870 L1040 820 L710 900 L390 820 Z" fill="#171717" stroke="#777" stroke-width="5"/><circle cx="980" cy="520" r="24" fill="#f5d76e"/><circle cx="980" cy="520" r="55" fill="none" stroke="#f5d76e" stroke-opacity=".35" stroke-width="5"/><text x="150" y="160" fill="#fff" font-family="Arial" font-size="40" font-weight="800">LOCATION</text><text x="150" y="235" fill="#fff" font-family="Arial" font-size="62" font-weight="900">{_safe(narration[:65])}</text></svg>'
     else:
         return None
     path.write_text(svg,encoding="utf-8")
     return {"id":f"generated-{index}-{role.replace(' ','-')}","kind":"generated","src":str(path),"role":role,"score":1.0,"credit":"Generated editorial graphic"}
-
