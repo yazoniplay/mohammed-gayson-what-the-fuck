@@ -25,6 +25,13 @@ def _span(sentence,words,pos):
         if flat[i:i+len(target)]==target:return i,i+len(target)
     return pos,min(len(words),pos+max(1,len(target)))
 
+def _editorial_dict(value):
+    if isinstance(value, list):
+        return {"sentences":[x for x in value if isinstance(x,dict)]}
+    if isinstance(value, dict):
+        return value
+    return {}
+
 def build_shots(beat,seed=42,aligned_words=None,sentences_override=None):
     random.seed(seed+sum(ord(c) for c in beat.get("id","")))
     ss=sentences_override or sentences(str(beat.get("narration",""))) or [str(beat.get("narration",""))]
@@ -42,18 +49,17 @@ def build_shots(beat,seed=42,aligned_words=None,sentences_override=None):
         if i==len(ss)-1:end=total
         aids=[a.get("id") for a in assets if a.get("id")]
         kw=keywords(s);layers=[]
-        editorial=beat.get("editorial",{}) or {}
+        editorial=_editorial_dict(beat.get("editorial"))
         decisions=editorial.get("sentences") or editorial.get("shots") or editorial.get("edits") or []
-        decision=decisions[i] if i<len(decisions) and isinstance(decisions[i],dict) else {}
         roles=editorial.get("visual_roles",[]) or editorial.get("visuals",[]) or []
+        decision=decisions[i] if i<len(decisions) and isinstance(decisions[i],dict) else {}
         role=str(decision.get("visual_role") or decision.get("role") or (roles[i%len(roles)] if roles else ("document" if reason=="evidence" else "photo"))).lower()
         motion=str(decision.get("camera_motion") or decision.get("motion") or "").lower()
         layer_motion=motion if motion in {"push","pull","pan","parallax","whip"} else ("push" if intensity>.6 else ("pan" if i%2 else "parallax"))
         if aids:
             aid=aids[i%len(aids)]
             if role in ("document","screenshot","chart","map"):
-                x,y,w,h=5,8,58,78
-                rot=-1 if role=="document" else 0
+                x,y,w,h=5,8,58,78;rot=-1 if role=="document" else 0
             elif len(aids)>1 and i%3==0:
                 x,y,w,h=3,5,58,86;rot=-1
             else:
@@ -73,15 +79,11 @@ def build_shots(beat,seed=42,aligned_words=None,sentences_override=None):
             layers.append({"id":f"editorial-focus-{i}","kind":"highlight","text":kw[0].upper(),"x":7,"y":59,"width":42,"height":9,"rotation":-1,"opacity":.72,"z":4,"animation":"static"})
         if intensity>.82:
             layers.append({"id":f"hl-{i}","kind":"highlight","text":kw[0].upper() if kw else "KEY DETAIL","x":7,"y":61,"width":38,"height":8,"rotation":-2,"opacity":.75,"z":4,"animation":"freeze"})
-        acts=[{"type":"cut","at":0,"duration":.05,"intensity":intensity,"reason":reason},
-              {"type":"zoom" if intensity>.65 else "pan","at":.12,"duration":min(.8,max(.2,(end-start)*.5)),"intensity":min(1,intensity*.65),"reason":"pace"}]
+        acts=[{"type":"cut","at":0,"duration":.05,"intensity":intensity,"reason":reason},{"type":"zoom" if intensity>.65 else "pan","at":.12,"duration":min(.8,max(.2,(end-start)*.5)),"intensity":min(1,intensity*.65),"reason":"pace"}]
         if reason=="reveal":
-            acts += [{"type":"flash","at":.82,"duration":.09,"intensity":.45,"reason":"reveal"},
-                     {"type":"glitch","at":.84,"duration":.12,"intensity":.18,"reason":"reveal"}]
+            acts += [{"type":"flash","at":.82,"duration":.09,"intensity":.45,"reason":"reveal"},{"type":"glitch","at":.84,"duration":.12,"intensity":.18,"reason":"reveal"}]
         if intensity>.88:
             acts.append({"type":"shake","at":.84,"duration":.16,"intensity":.25,"reason":"emphasis"})
-        shots.append({"id":f"{beat['id']}-shot-{i}","start":round(start,3),"end":round(end,3),
-                      "reason":reason,"intent":intent,"assetIds":aids,"layers":layers,"actions":acts,
-                      "sfx":[],"intensity":round(intensity,2)})
+        shots.append({"id":f"{beat['id']}-shot-{i}","start":round(start,3),"end":round(end,3),"reason":reason,"intent":intent,"assetIds":aids,"layers":layers,"actions":acts,"sfx":[],"intensity":round(intensity,2)})
     beat["shots"]=shots
     return beat
