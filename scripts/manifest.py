@@ -9,7 +9,7 @@ def norm(s:str)->list[str]:
 
 def match_span(text:str,words:list[dict],start:int)->tuple[int,int]:
     target=norm(text)
-    flat=[m.group(0) for w in words for m in re.finditer(r"[a-z0-9]+",str(w.get("word","")).lower())]
+    flat=[re.sub(r"[^a-z0-9]","",str(w.get("word","")).lower()) for w in words]
     for i in range(start,max(start,len(flat)-len(target)+1)):
         if flat[i:i+len(target)]==target:return i,i+len(target)
     return start,min(len(words),start+len(target))
