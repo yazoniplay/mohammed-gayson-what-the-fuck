@@ -1,5 +1,5 @@
 export type BeatKind="cold-open"|"context"|"escalation"|"reveal"|"fallout"|"ending";
-export type RenderProfile="youtube"|"shorts"|"square"|"4k";
+export type RenderProfile="youtube";
 export type AssetKind="photo"|"video"|"generated"|"document"|"texture"|"map"|"screenshot";
 export type OverlayKind="headline"|"label"|"stat"|"stamp"|"quote"|"source"|"location"|"redaction"|"keyword"|"arrow"|"circle";
 export type MotionKind="static"|"push"|"pull"|"pan"|"whip"|"shake"|"parallax"|"freeze";
