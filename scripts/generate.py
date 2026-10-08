@@ -17,7 +17,9 @@ def main():
  research=[]
  for b in plan.get("beats",[]):
   q=f"{a.topic}: {b.get('title','')} {b.get('narration','')[:500]}"
-  research.extend(search_web(q,limit=3))
+  found=search_web(q,limit=3)
+  b["research"]=found
+  research.extend(found)
  plan["sources"]=list(dict.fromkeys(x["url"] for x in research if x.get("url")))
  (root/"research.json").write_text(json.dumps(research,indent=2),encoding="utf-8")
  (root/"plan.json").write_text(json.dumps(plan,indent=2),encoding="utf-8")
