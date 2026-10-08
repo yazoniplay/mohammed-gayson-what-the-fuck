@@ -1,5 +1,5 @@
 import React from "react";
-import {AbsoluteFill,Audio,Img,interpolate,useCurrentFrame,useVideoConfig,staticFile} from "remotion";
+import {AbsoluteFill,Audio,Img,OffthreadVideo,interpolate,useCurrentFrame,useVideoConfig,staticFile} from "remotion";
 import type {VideoManifest,Beat,Shot,Layer} from "./types";
 
 const src=(s:string)=>s.startsWith("http")?s:staticFile(s);
@@ -18,10 +18,14 @@ const LayerView:React.FC<{layer:Layer;beat:Beat;shot:Shot;frame:number;fps:numbe
  const base:React.CSSProperties={position:"absolute",left:`${layer.x}%`,top:`${layer.y}%`,width:`${layer.width}%`,height:`${layer.height}%`,opacity:(layer.opacity??1)*reveal,zIndex:layer.z,transform:`translate(${panX}%,${panY}%) rotate(${layer.rotation}deg) scale(${sc})`,transformOrigin:"center center"};
  if(layer.kind==="image"&&layer.assetId){
   const a=beat.assets.find(x=>x.id===layer.assetId);
-  return a?<div style={{...base,overflow:"hidden",borderRadius:layer.width<70?18:0,boxShadow:layer.width<70?shadow:"0 0 0 transparent",background:"#111"}}>
-   <Img src={src(a.src)} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+  if(!a)return null;
+  const media=a.kind==="video"
+   ? <OffthreadVideo src={src(a.src)} muted startFrom={0} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+   : <Img src={src(a.src)} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>;
+  return <div style={{...base,overflow:"hidden",borderRadius:layer.width<70?18:0,boxShadow:layer.width<70?shadow:"0 0 0 transparent",background:"#111"}}>
+   {media}
    <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(0,0,0,.04),transparent 55%,rgba(0,0,0,.5))"}}/>
-  </div>:null;
+  </div>;
  }
  if(layer.kind==="highlight")return <div style={{...base,background:"linear-gradient(90deg,rgba(245,205,40,.55),rgba(245,205,40,.08))",mixBlendMode:"screen",filter:"blur(.3px)"}}/>;
  if(layer.kind==="arrow")return <div style={{...base,color:"#fff",fontSize:"4vw",fontWeight:900,textShadow}}>{layer.text||"→"}</div>;
