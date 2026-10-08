@@ -4,11 +4,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 SYSTEM="""You are the editorial brain for an automated premium documentary editor.
-Create original factual documentary plans with a strong narrative arc. Think like a senior editor:
-every sentence must have a visual reason, evidence must feel tangible, reveals must escalate, and
-the screen should change when the information changes. Use cold-open, context, escalation, reveal,
-fallout and ending beats. Return ONLY valid JSON with 8-14 beats. The normal target is 8-14 minutes; complex topics may expand toward 30 minutes when genuinely necessary. Each beat needs narration,
-intensity 0-1, keywords, overlays and a visual intent. Do not imitate a named creator's exact style."""
+Create an ORIGINAL factual long-form documentary plan. Do not imitate any named creator.
+
+The normal finished video must be 8-14 minutes. Write enough real narration to support that duration:
+target roughly 1,400-2,100 spoken words total (about 150 words/minute). Complex topics may naturally
+expand toward 30 minutes, but never pad a story just to hit a runtime.
+
+Use a strong narrative arc: cold-open, context, escalation, competing explanations/evidence, reveal,
+fallout and ending. Make every beat advance the story. Every sentence should have a visual reason,
+and factual claims should be specific enough to research.
+
+Return ONLY valid JSON with 8-14 beats. Each beat needs narration, intensity 0-1, keywords, overlays
+and a visual intent. Do not write placeholder narration, repeated filler, or generic one-line beats."""
 
 def _normalize_plan(value,topic:str)->dict:
     if isinstance(value,list):
@@ -18,7 +25,6 @@ def _normalize_plan(value,topic:str)->dict:
         if isinstance(beats,list):
             value.setdefault("title",topic)
             return value
-        # Some models wrap the array under another common key.
         for key in ("plan","script","sections","scenes"):
             candidate=value.get(key)
             if isinstance(candidate,list):
@@ -31,13 +37,14 @@ def _gemini(topic:str)->dict:
     client=genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     r=client.models.generate_content(
         model=os.getenv("GEMINI_MODEL") or "gemini-3.5-flash-lite",
-        contents=f"{SYSTEM}\n\nBuild a fast-paced documentary video plan about: {topic}",
-        config=types.GenerateContentConfig(
-            temperature=.7,
-            response_mime_type="application/json",
-        ),
+        contents=f"{SYSTEM}\n\nBuild a complete long-form documentary plan about: {topic}",
+        config=types.GenerateContentConfig(temperature=.7,response_mime_type="application/json"),
     )
-    return _normalize_plan(json.loads(r.text),topic)
+    plan=_normalize_plan(json.loads(r.text),topic)
+    words=sum(len(str(b.get("narration","")).split()) for b in plan["beats"])
+    if words < 1200:
+        raise ValueError(f"Gemini returned only {words} narration words; a long-form plan needs at least 1200")
+    return plan
 
 def _openai(topic:str)->dict:
     from openai import OpenAI
@@ -45,7 +52,7 @@ def _openai(topic:str)->dict:
     r=c.chat.completions.create(
         model=os.getenv("OPENAI_MODEL") or "gpt-4o-mini",
         response_format={"type":"json_object"},
-        messages=[{"role":"system","content":SYSTEM},{"role":"user","content":f"Build a fast-paced documentary video plan about: {topic}"}],
+        messages=[{"role":"system","content":SYSTEM},{"role":"user","content":f"Build a complete long-form documentary plan about: {topic}"}],
         temperature=.7,
     )
     return _normalize_plan(json.loads(r.choices[0].message.content),topic)
@@ -55,8 +62,8 @@ def _anthropic(topic:str)->dict:
     c=Anthropic()
     r=c.messages.create(
         model=os.getenv("ANTHROPIC_MODEL") or "claude-3-5-sonnet-latest",
-        max_tokens=5000,system=SYSTEM,
-        messages=[{"role":"user","content":f"Build a fast-paced documentary video plan about: {topic}"}],
+        max_tokens=7000,system=SYSTEM,
+        messages=[{"role":"user","content":f"Build a complete long-form documentary plan about: {topic}"}],
     )
     return _normalize_plan(json.loads(r.content[0].text),topic)
 
