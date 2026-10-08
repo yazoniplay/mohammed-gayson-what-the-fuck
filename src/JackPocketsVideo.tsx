@@ -42,8 +42,8 @@ export const JackPocketsVideo:React.FC<{manifest:VideoManifest}>=({manifest})=>{
  return <AbsoluteFill style={{background:"#080808"}}>
   {manifest.beats.flatMap(b=>b.shots.map(s=><Sequence key={s.id} from={Math.round((b.start+s.start)*fps)} durationInFrames={Math.max(1,Math.round((s.end-s.start)*fps))}><ShotView beat={b} shot={s} frame={frame} fps={fps}/></Sequence>))}
   {manifest.audioSrc&&<Audio src={staticFile(manifest.audioSrc)}/>}
-  {manifest.musicSrc&&<Audio src={staticFile(manifest.musicSrc)} volume={.11}/>}
-  <div style={{position:"absolute",left:"8%",right:"8%",bottom:"4%",height:48,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Arial Black,Arial",fontSize:"clamp(20px,2.1vw,40px)",color:"#fff",textShadow}}>{cap(manifest.captions,time)}</div>
+  {manifest.musicSrc&&<Audio src={staticFile(manifest.musicSrc)} volume={()=>{const b=manifest.beats.find(x=>time>=x.start&&time<x.end);return .055+(1-(b?.intensity??.5))*.055;}}/>}
+  {manifest.beats.flatMap(b=>b.shots.flatMap(s=>(s.sfx||[]).map((fx,i)=>fx.src?<Sequence key={`sfx-${s.id}-${i}`} from={Math.round((b.start+s.start+fx.at)*fps)} durationInFrames={Math.max(1,Math.round(.5*fps))}><Audio src={staticFile(fx.src)} volume={fx.gain}/></Sequence>:null)))}<div style={{position:"absolute",left:"8%",right:"8%",bottom:"4%",height:48,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Arial Black,Arial",fontSize:"clamp(20px,2.1vw,40px)",color:"#fff",textShadow}}>{cap(manifest.captions,time)}</div>
   <div style={{position:"absolute",left:0,right:0,bottom:0,height:4,background:"rgba(255,255,255,.14)",zIndex:100}}><div style={{height:"100%",width:`${Math.min(100,time/manifest.duration*100)}%`,background:"#fff"}}/></div>
  </AbsoluteFill>;
 };
