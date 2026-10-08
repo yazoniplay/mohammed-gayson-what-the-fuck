@@ -24,14 +24,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Install Node dependencies
-        run: npm ci
+        run: npm install
       - name: Install Python dependencies
         run: pip install -r requirements.txt
       - name: Generate 1080p60 documentary
