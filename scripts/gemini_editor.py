@@ -11,8 +11,9 @@ def refine_beat(beat:dict)->dict:
     client=genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     prompt=json.dumps({"title":beat.get("title",""),"narration":beat.get("narration",""),"keywords":beat.get("keywords",[]),"intensity":beat.get("intensity",.5),"research":beat.get("research",[])[:4]},ensure_ascii=False)
     try:
+        model=os.getenv("GEMINI_EDITOR_MODEL") or os.getenv("GEMINI_MODEL") or "gemini-3.5-flash-lite"
         r=client.models.generate_content(
-            model=os.getenv("GEMINI_EDITOR_MODEL",os.getenv("GEMINI_MODEL","gemini-3.5-flash-lite")),
+            model=model,
             contents=f"{SYSTEM}\n\nBeat:\n{prompt}",
             config=types.GenerateContentConfig(temperature=.35,response_mime_type="application/json"),
         )
