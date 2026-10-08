@@ -43,8 +43,12 @@ def build_shots(beat,seed=42,aligned_words=None,sentences_override=None):
         aids=[a.get("id") for a in assets if a.get("id")]
         kw=keywords(s);layers=[]
         editorial=beat.get("editorial",{}) or {}
+        decisions=editorial.get("sentences") or editorial.get("shots") or editorial.get("edits") or []
+        decision=decisions[i] if i<len(decisions) and isinstance(decisions[i],dict) else {}
         roles=editorial.get("visual_roles",[]) or editorial.get("visuals",[]) or []
-        role=(str(roles[i%len(roles)]).lower() if roles else ("document" if reason=="evidence" else "photo"))
+        role=str(decision.get("visual_role") or decision.get("role") or (roles[i%len(roles)] if roles else ("document" if reason=="evidence" else "photo"))).lower()
+        motion=str(decision.get("camera_motion") or decision.get("motion") or "").lower()
+        layer_motion=motion if motion in {"push","pull","pan","parallax","whip"} else ("push" if intensity>.6 else ("pan" if i%2 else "parallax"))
         if aids:
             aid=aids[i%len(aids)]
             if role in ("document","screenshot","chart","map"):
@@ -54,7 +58,7 @@ def build_shots(beat,seed=42,aligned_words=None,sentences_override=None):
                 x,y,w,h=3,5,58,86;rot=-1
             else:
                 x,y,w,h=0,0,100,100;rot=0
-            layers.append({"id":f"img-{i}","kind":"image","assetId":aid,"x":x,"y":y,"width":w,"height":h,"rotation":rot,"opacity":1,"z":0,"animation":"push" if intensity>.6 else "pan"})
+            layers.append({"id":f"img-{i}","kind":"image","assetId":aid,"x":x,"y":y,"width":w,"height":h,"rotation":rot,"opacity":1,"z":0,"animation":layer_motion})
             if len(aids)>1 and role in ("document","screenshot","chart","map"):
                 aid2=aids[(i+1)%len(aids)]
                 layers.append({"id":f"img-secondary-{i}","kind":"image","assetId":aid2,"x":66,"y":18,"width":29,"height":48,"rotation":1,"opacity":.96,"z":3,"animation":"pull"})
@@ -62,6 +66,11 @@ def build_shots(beat,seed=42,aligned_words=None,sentences_override=None):
             layers.append({"id":f"kw-{i}","kind":"text","text":kw[0].upper(),"x":7,"y":70,"width":65,"height":18,"rotation":0,"opacity":.98,"z":5,"animation":"static"})
         if reason in ("evidence","reveal"):
             layers.append({"id":f"label-{i}","kind":"label","text":(role.upper()+" • "+reason.upper()),"x":7,"y":4,"width":34,"height":5,"rotation":0,"opacity":.9,"z":6,"animation":"static"})
+        overlay_text=str(decision.get("overlay") or decision.get("text_overlay") or "").strip()
+        if overlay_text:
+            layers.append({"id":f"editorial-overlay-{i}","kind":"label","text":overlay_text[:70],"x":7,"y":12,"width":48,"height":7,"rotation":0,"opacity":.96,"z":7,"animation":"static"})
+        if decision.get("highlight") and kw:
+            layers.append({"id":f"editorial-focus-{i}","kind":"highlight","text":kw[0].upper(),"x":7,"y":59,"width":42,"height":9,"rotation":-1,"opacity":.72,"z":4,"animation":"static"})
         if intensity>.82:
             layers.append({"id":f"hl-{i}","kind":"highlight","text":kw[0].upper() if kw else "KEY DETAIL","x":7,"y":61,"width":38,"height":8,"rotation":-2,"opacity":.75,"z":4,"animation":"freeze"})
         acts=[{"type":"cut","at":0,"duration":.05,"intensity":intensity,"reason":reason},
