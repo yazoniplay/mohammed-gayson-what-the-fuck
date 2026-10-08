@@ -31,10 +31,12 @@ def build_shots(beat,seed=42,aligned_words=None,sentences_override=None):
             start=sum(x["end"]-x["start"] for x in shots);end=start+max(.45,total/max(1,len(ss)))
         end=max(start+.25,end)
         if i==len(ss)-1:end=total
-        aids=[a.get("id") for a in assets[:1] if a.get("id")];kw=keywords(s);layers=[]
-        if aids:layers.append({"id":f"img-{i}","kind":"image","assetId":aids[0],"x":0,"y":0,"width":100,"height":100,"rotation":0,"opacity":1,"z":0,"animation":"push" if intensity>.6 else "pan"})
-        if kw:layers.append({"id":f"kw-{i}","kind":"text","text":kw[0].upper(),"x":7,"y":70,"width":65,"height":18,"rotation":0,"opacity":.98,"z":5,"animation":"static"})
-        if reason in ("evidence","reveal"):layers.append({"id":f"label-{i}","kind":"label","text":reason.upper(),"x":7,"y":7,"width":22,"height":5,"rotation":0,"opacity":.85,"z":6,"animation":"static"})
+        aids=[a.get("id") for a in assets if a.get("id")];kw=keywords(s);layers=[]
+        editorial=beat.get("editorial",{}) or {};roles=editorial.get("visual_roles",[]) or editorial.get("visuals",[]) or []
+        role=(roles[i%len(roles)] if roles else ("document" if reason=="evidence" else "photo"))
+        if aids:\n            aid=aids[i%len(aids)]; x,y,w,h=(4,8,58,78) if role in ("document","screenshot") else (0,0,100,100)\n            layers.append({"id":f"img-{i}","kind":"image","assetId":aid,"x":x,"y":y,"width":w,"height":h,"rotation":-1 if role=="document" else 0,"opacity":1,"z":0,"animation":"push" if intensity>.6 else "pan"})
+        if kw and role not in ("document","screenshot"):layers.append({"id":f"kw-{i}","kind":"text","text":kw[0].upper(),"x":7,"y":70,"width":65,"height":18,"rotation":0,"opacity":.98,"z":5,"animation":"static"})
+        if reason in ("evidence","reveal"):layers.append({"id":f"label-{i}","kind":"label","text":(role.upper()+" • "+reason.upper()),"x":7,"y":4,"width":34,"height":5,"rotation":0,"opacity":.85,"z":6,"animation":"static"})
         if intensity>.82:layers.append({"id":f"hl-{i}","kind":"highlight","text":kw[0].upper() if kw else "KEY DETAIL","x":7,"y":61,"width":38,"height":8,"rotation":-2,"opacity":.75,"z":4,"animation":"freeze"})
         acts=[{"type":"cut","at":0,"duration":.05,"intensity":intensity,"reason":reason},{"type":"zoom" if intensity>.65 else "pan","at":.12,"duration":min(.8,max(.2,(end-start)*.5)),"intensity":min(1,intensity*.65),"reason":"pace"}]
         if reason=="reveal":acts += [{"type":"flash","at":.82,"duration":.09,"intensity":.45,"reason":"reveal"},{"type":"glitch","at":.84,"duration":.12,"intensity":.18,"reason":"reveal"}]
