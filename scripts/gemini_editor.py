@@ -12,7 +12,7 @@ def refine_beat(beat:dict)->dict:
     prompt=json.dumps({"title":beat.get("title",""),"narration":beat.get("narration",""),"keywords":beat.get("keywords",[]),"intensity":beat.get("intensity",.5),"research":beat.get("research",[])[:4]},ensure_ascii=False)
     try:
         r=client.models.generate_content(
-            model=os.getenv("GEMINI_EDITOR_MODEL",os.getenv("GEMINI_MODEL","gemini-2.5-flash")),
+            model=os.getenv("GEMINI_EDITOR_MODEL",os.getenv("GEMINI_MODEL","gemini-3.5-flash-lite")),
             contents=f"{SYSTEM}\n\nBeat:\n{prompt}",
             config=types.GenerateContentConfig(temperature=.35,response_mime_type="application/json"),
         )
