@@ -15,7 +15,7 @@ def _gemini(topic:str)->dict:
     from google.genai import types
     client=genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     r=client.models.generate_content(
-        model=os.getenv("GEMINI_MODEL","gemini-2.5-flash"),
+        model=os.getenv("GEMINI_MODEL","gemini-3.5-flash-lite"),
         contents=f"{SYSTEM}\n\nBuild a fast-paced documentary video plan about: {topic}",
         config=types.GenerateContentConfig(
             temperature=.7,
