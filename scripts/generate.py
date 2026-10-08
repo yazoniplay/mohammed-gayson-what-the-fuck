@@ -49,8 +49,8 @@ def main():
  print(f"READY: {manifest}")
  if not a.no_render:
   out=Path("out")/f"{slug(a.topic)}.mp4"
-  subprocess.run(["npx","remotion","render","src/index.tsx","JackPocketsVideo",str(out),"--props",str(manifest)],check=True)
-  probe=subprocess.run(["ffprobe","-v","error","-show_entries","stream=codec_type,width,height,r_frame_rate","-show_entries","format=duration","-of","json",str(out)],capture_output=True,text=True,check=True)
+  subprocess.run(["npx","remotion","render","src/index.tsx","JackPocketsVideo",str(out),"--props",str(manifest),"--codec=h264","--audio-codec=aac","--pixel-format=yuv420p","--crf=18","--enforce-audio-track"],check=True)
+  probe=subprocess.run(["ffprobe","-v","error","-show_streams","-show_format","-of","json",str(out)],capture_output=True,text=True,check=True)
   info=json.loads(probe.stdout);streams=info.get("streams",[])
   video=next((s for s in streams if s.get("codec_type")=="video"),None)
   audio=next((s for s in streams if s.get("codec_type")=="audio"),None)
