@@ -3,7 +3,7 @@ import argparse,json,re,subprocess
 from pathlib import Path
 from llm import generate
 from tts import synthesize
-from assets import search_pexels,make_asset_plan,generate_role_asset
+from assets import search_pexels,search_pexels_videos,make_asset_plan,generate_role_asset
 from research import search_web
 from manifest import build
 from quality import validate
@@ -39,9 +39,17 @@ def main():
     aset.append(item)
   photo_queries=list(dict.fromkeys((b.get("keywords") or [a.topic]) + [narration[:160]]))
   for q in photo_queries[:max(1,a.assets_per_beat)]:
-   for item in search_pexels(str(q),root/f"assets-{i}",limit=1):
-    item["src"]=str(Path(item["src"]).relative_to("public")).replace("\\","/")
-    aset.append(item)
+   try:
+    videos=search_pexels_videos(str(q),root/f"assets-{i}",limit=1)
+    for item in videos:
+     item["src"]=str(Path(item["src"]).relative_to("public")).replace("\\","/")
+     aset.append(item)
+    if not videos:
+     for item in search_pexels(str(q),root/f"assets-{i}",limit=1):
+      item["src"]=str(Path(item["src"]).relative_to("public")).replace("\\","/")
+      aset.append(item)
+   except Exception as e:
+    print(f"[pexels] query failed: {e}; falling back to generated assets")
   asset_sets.append(aset)
  manifest=build(plan,str(audio.relative_to("public")).replace("\\","/"),words,asset_sets,PROFILES[a.profile],root/"manifest.json")
  errors=validate(str(manifest))
