@@ -44,6 +44,9 @@ const ShotView:React.FC<{beat:Beat;shot:Shot;frame:number;fps:number}>=({beat,sh
   {shot.layers.map(l=><LayerView key={l.id} layer={l} beat={beat} shot={shot} frame={frame} fps={fps}/>)}
   {fp>0&&<AbsoluteFill style={{background:"#fff",opacity:fp,zIndex:30}}/>}
   {glitch&&<AbsoluteFill style={{opacity:.12,mixBlendMode:"screen",transform:`translateX(${-glitchX}px)`,background:"linear-gradient(transparent 46%,rgba(255,255,255,.8) 47%,transparent 49%,transparent 52%,rgba(255,255,255,.35) 53%,transparent 55%)",zIndex:31}}/>}
+  {shot.actions.some(a=>a.type==="freeze")&&<AbsoluteFill style={{background:"#fff",opacity:interpolate(local,[0,.06,.14],[0,.08,0],{extrapolateLeft:"clamp",extrapolateRight:"clamp"}),zIndex:29}}/>}
+  {shot.actions.some(a=>a.type==="paper")&&<AbsoluteFill style={{background:"linear-gradient(135deg,rgba(245,240,225,.12),transparent 35%,rgba(255,255,255,.04))",mixBlendMode:"screen",zIndex:28}}/>}
+  {shot.actions.some(a=>a.type==="mask")&&<AbsoluteFill style={{background:"radial-gradient(circle at 50% 50%,transparent 0 42%,rgba(0,0,0,.88) 72%)",zIndex:27}}/>}
   <AbsoluteFill style={{pointerEvents:"none",boxShadow:"inset 0 0 220px rgba(0,0,0,.78)",zIndex:32}}/>
   <AbsoluteFill style={{pointerEvents:"none",background:"linear-gradient(180deg,rgba(0,0,0,.28),transparent 24%,transparent 76%,rgba(0,0,0,.42))",zIndex:33}}/>
  </AbsoluteFill>;
