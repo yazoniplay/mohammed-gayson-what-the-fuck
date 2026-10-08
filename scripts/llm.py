@@ -15,7 +15,7 @@ def _gemini(topic:str)->dict:
     from google.genai import types
     client=genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     r=client.models.generate_content(
-        model=os.getenv("GEMINI_MODEL","gemini-3.5-flash-lite"),
+        model=os.getenv("GEMINI_MODEL") or "gemini-3.5-flash-lite",
         contents=f"{SYSTEM}\n\nBuild a fast-paced documentary video plan about: {topic}",
         config=types.GenerateContentConfig(
             temperature=.7,
@@ -28,7 +28,7 @@ def _openai(topic:str)->dict:
     from openai import OpenAI
     c=OpenAI()
     r=c.chat.completions.create(
-        model=os.getenv("OPENAI_MODEL","gpt-4o-mini"),
+        model=os.getenv("OPENAI_MODEL") or "gpt-4o-mini",
         response_format={"type":"json_object"},
         messages=[{"role":"system","content":SYSTEM},{"role":"user","content":f"Build a fast-paced documentary video plan about: {topic}"}],
         temperature=.7,
@@ -39,14 +39,13 @@ def _anthropic(topic:str)->dict:
     from anthropic import Anthropic
     c=Anthropic()
     r=c.messages.create(
-        model=os.getenv("ANTHROPIC_MODEL","claude-3-5-sonnet-latest"),
+        model=os.getenv("ANTHROPIC_MODEL") or "claude-3-5-sonnet-latest",
         max_tokens=5000,system=SYSTEM,
         messages=[{"role":"user","content":f"Build a fast-paced documentary video plan about: {topic}"}],
     )
     return json.loads(r.content[0].text)
 
 def generate(topic:str)->dict:
-    # Gemini is first-class, with explicit provider selection and safe fallback.
     provider=os.getenv("LLM_PROVIDER","auto").lower()
     order={"gemini":["gemini"],"openai":["openai"],"anthropic":["anthropic"],"auto":["gemini","openai","anthropic"]}.get(provider,["gemini","openai","anthropic"])
     for name in order:
@@ -56,5 +55,5 @@ def generate(topic:str)->dict:
             if name=="anthropic" and os.getenv("ANTHROPIC_API_KEY"): return _anthropic(topic)
         except Exception as exc:
             print(f"[llm] {name} failed: {exc}")
-    from generate_script import fallback_plan
-    return fallback_plan(topic)
+    from generate_script import fallback
+    return fallback(topic)
