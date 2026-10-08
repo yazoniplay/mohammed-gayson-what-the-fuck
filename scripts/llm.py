@@ -10,6 +10,21 @@ the screen should change when the information changes. Use cold-open, context, e
 fallout and ending beats. Return ONLY valid JSON with 8-14 beats. The normal target is 8-14 minutes; complex topics may expand toward 30 minutes when genuinely necessary. Each beat needs narration,
 intensity 0-1, keywords, overlays and a visual intent. Do not imitate a named creator's exact style."""
 
+def _normalize_plan(value,topic:str)->dict:
+    if isinstance(value,list):
+        return {"title":topic,"beats":value}
+    if isinstance(value,dict):
+        beats=value.get("beats")
+        if isinstance(beats,list):
+            value.setdefault("title",topic)
+            return value
+        # Some models wrap the array under another common key.
+        for key in ("plan","script","sections","scenes"):
+            candidate=value.get(key)
+            if isinstance(candidate,list):
+                return {"title":value.get("title",topic),"beats":candidate}
+    raise ValueError("LLM returned an unsupported documentary plan shape")
+
 def _gemini(topic:str)->dict:
     from google import genai
     from google.genai import types
@@ -22,7 +37,7 @@ def _gemini(topic:str)->dict:
             response_mime_type="application/json",
         ),
     )
-    return json.loads(r.text)
+    return _normalize_plan(json.loads(r.text),topic)
 
 def _openai(topic:str)->dict:
     from openai import OpenAI
@@ -33,7 +48,7 @@ def _openai(topic:str)->dict:
         messages=[{"role":"system","content":SYSTEM},{"role":"user","content":f"Build a fast-paced documentary video plan about: {topic}"}],
         temperature=.7,
     )
-    return json.loads(r.choices[0].message.content)
+    return _normalize_plan(json.loads(r.choices[0].message.content),topic)
 
 def _anthropic(topic:str)->dict:
     from anthropic import Anthropic
@@ -43,7 +58,7 @@ def _anthropic(topic:str)->dict:
         max_tokens=5000,system=SYSTEM,
         messages=[{"role":"user","content":f"Build a fast-paced documentary video plan about: {topic}"}],
     )
-    return json.loads(r.content[0].text)
+    return _normalize_plan(json.loads(r.content[0].text),topic)
 
 def generate(topic:str)->dict:
     provider=os.getenv("LLM_PROVIDER","auto").lower()
