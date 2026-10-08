@@ -3,6 +3,7 @@ import {AbsoluteFill,Audio,Img,interpolate,useCurrentFrame,useVideoConfig,Sequen
 import type {VideoManifest,Beat,Shot,Layer} from "./types";
 const src=(s:string)=>s.startsWith("http")?s:staticFile(s);
 const shadow="0 4px 24px rgba(0,0,0,.85)";
+const cinematic={boxSizing:"border-box" as const};
 const LayerView:React.FC<{layer:Layer;beat:Beat;shot:Shot;frame:number;fps:number}>=({layer,beat,shot,frame,fps})=>{
  const t=Math.max(0,frame/fps-(beat.start+shot.start)),d=Math.max(.01,shot.end-shot.start);
  const p=interpolate(t,[0,Math.min(.22,d)],[0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"});
