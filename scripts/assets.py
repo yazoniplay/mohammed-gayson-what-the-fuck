@@ -52,7 +52,13 @@ def generate_role_asset(role:str,narration:str,out:Path,research:list[dict]|None
     path=out/f"{index}-{role.replace(' ','-')}-{key}.svg"
     snippet=(research or [{}])[0].get("content","") if research else ""
     if role in {"document","quote card","headline"}:
-        svg=_svg("SOURCE / DOCUMENT",narration[:72],snippet[:500] or "Evidence treatment generated from the research context.")
+        source=(research or [{}])[0]
+        source_title=source.get("title","Research source") if source else "Research source"
+        source_url=source.get("url","") if source else ""
+        body=(snippet[:420] or "Evidence treatment generated from the research context.")
+        body += f"\\n\\nSOURCE: {source_title}"
+        if source_url: body += f"\\n{source_url}"
+        svg=_svg("SOURCE / DOCUMENT",narration[:72],body)
     elif role=="screenshot":
         svg=_svg("SCREEN / ONLINE",narration[:72],"A stylized source surface used to visualize an online claim or interface without fabricating a real screenshot.")
     elif role=="chart":
