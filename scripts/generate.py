@@ -26,7 +26,7 @@ def main():
  words=json.loads((root/"alignment.json").read_text());asset_sets=[]
  for i,b in enumerate(plan.get("beats",[])):
   aset=[]
-  for q in (b.get("keywords") or [a.topic])[:a.assets_per_beat]:
+  for q in list(dict.fromkeys((b.get("keywords") or [a.topic]) + [str(b.get("narration",""))[:120]]))[:a.assets_per_beat]:
    for item in search_pexels(str(q),root/f"assets-{i}",limit=1):
     item["src"]=str(Path(item["src"]).relative_to("public")).replace("\\","/");aset.append(item)
   asset_sets.append(aset)
