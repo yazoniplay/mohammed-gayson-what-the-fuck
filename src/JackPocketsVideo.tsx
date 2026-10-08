@@ -1,5 +1,5 @@
 import React from "react";
-import {AbsoluteFill,Audio,Img,interpolate,useCurrentFrame,useVideoConfig,Sequence,staticFile} from "remotion";
+import {AbsoluteFill,Audio,Img,interpolate,useCurrentFrame,useVideoConfig,staticFile} from "remotion";
 import type {VideoManifest,Beat,Shot,Layer} from "./types";
 
 const src=(s:string)=>s.startsWith("http")?s:staticFile(s);
@@ -57,13 +57,22 @@ const cap=(w:any[],t:number)=>w.find((x:any)=>t>=x.start&&t<x.end)?.word||"";
 
 export const JackPocketsVideo:React.FC<{manifest:VideoManifest}>=({manifest})=>{
  const frame=useCurrentFrame(),{fps}=useVideoConfig(),time=frame/fps;
- const active=manifest.beats.find(x=>time>=x.start&&time<x.end);
- return <AbsoluteFill style={{background:"#080808"}}>
-  {manifest.beats.flatMap(b=>b.shots.map(s=><Sequence key={s.id} from={Math.round((b.start+s.start)*fps)} durationInFrames={Math.max(1,Math.round((s.end-s.start)*fps))}><ShotView beat={b} shot={s} frame={frame} fps={fps}/></Sequence>))}
+ const activeBeat=manifest.beats.find(b=>time>=b.start&&time<b.end);
+ const activeShot=activeBeat?.shots.find(s=>time>=activeBeat.start+s.start&&time<activeBeat.start+s.end);
+ const activeShotFrame=activeBeat&&activeShot ? frame-Math.round((activeBeat.start+activeShot.start)*fps) : 0;
+ const caption=cap(manifest.captions,time);
+ return <AbsoluteFill style={{background:"#101010",overflow:"hidden"}}>
+  {activeBeat&&activeShot&&<ShotView beat={activeBeat} shot={activeShot} frame={frame} fps={fps}/>}
+  {activeBeat&&activeShot&&activeShot.layers.length===0&&<AbsoluteFill style={{background:"linear-gradient(135deg,#171717,#050505)",zIndex:40}}/>}
+  {!activeBeat&&<AbsoluteFill style={{background:"#101010",zIndex:40}}/>}
+  <AbsoluteFill style={{pointerEvents:"none",zIndex:80}}>
+   {activeBeat&&<div style={{position:"absolute",left:"6%",top:"5%",fontFamily:"Arial Black,Arial",fontSize:"18px",fontWeight:900,letterSpacing:3,color:"rgba(255,255,255,.65)",textTransform:"uppercase"}}>{activeBeat.kind}</div>}
+   {activeBeat&&<div style={{position:"absolute",left:"6%",right:"12%",bottom:"13%",fontFamily:"Arial Black,Arial",fontSize:"clamp(28px,3.2vw,64px)",fontWeight:900,lineHeight:.98,color:"#fff",textShadow}}>{activeBeat.narration.slice(0,110)}</div>}
+   {caption&&<div style={{position:"absolute",left:"9%",right:"9%",bottom:"5.5%",height:64,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Arial Black,Arial",fontSize:"clamp(22px,2.25vw,42px)",fontWeight:900,color:"#fff",textShadow:"0 3px 14px #000",textAlign:"center"}}>{caption}</div>}
+   <div style={{position:"absolute",left:0,right:0,bottom:0,height:4,background:"rgba(255,255,255,.18)"}}><div style={{height:"100%",width:`${Math.min(100,time/manifest.duration*100)}%`,background:"#f5d76e"}}/></div>
+  </AbsoluteFill>
   {manifest.audioSrc&&<Audio src={staticFile(manifest.audioSrc)}/>}
-  {manifest.musicSrc&&<Audio src={staticFile(manifest.musicSrc)} volume={()=>.045+(1-(active?.intensity??.5))*.07}/>}
-  {manifest.beats.flatMap(b=>b.shots.flatMap(s=>(s.sfx||[]).map((fx,i)=>fx.src?<Sequence key={`sfx-${s.id}-${i}`} from={Math.round((b.start+s.start+fx.at)*fps)} durationInFrames={Math.max(1,Math.round(.6*fps))}><Audio src={staticFile(fx.src)} volume={fx.gain}/></Sequence>:null)))}
-  <div style={{position:"absolute",left:"9%",right:"9%",bottom:"5.5%",height:64,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Arial Black,Arial",fontSize:"clamp(22px,2.25vw,42px)",fontWeight:900,color:"#fff",textShadow:"0 3px 14px #000",zIndex:90,textAlign:"center"}}>{cap(manifest.captions,time)}</div>
-  <div style={{position:"absolute",left:0,right:0,bottom:0,height:4,background:"rgba(255,255,255,.12)",zIndex:100}}><div style={{height:"100%",width:`${Math.min(100,time/manifest.duration*100)}%`,background:"#fff"}}/></div>
+  {manifest.musicSrc&&<Audio src={staticFile(manifest.musicSrc)} volume={()=>.045+(1-(activeBeat?.intensity??.5))*.07}/>} 
+  {activeBeat&&activeShot&&activeShot.sfx?.map((fx,i)=>fx.src?<Audio key={`sfx-${activeShot.id}-${i}`} src={staticFile(fx.src)} startFrom={0} volume={fx.gain}/>:null)}
  </AbsoluteFill>;
 };
