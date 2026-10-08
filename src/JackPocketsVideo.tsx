@@ -4,6 +4,7 @@ import type {VideoManifest,Beat,Shot,Layer} from "./types";
 
 const src=(s:string)=>s.startsWith("http")?s:staticFile(s);
 const shadow="0 8px 36px rgba(0,0,0,.9)";
+const textShadow="0 3px 18px rgba(0,0,0,.95)";
 const clamp=(x:number,a=0,b=1)=>Math.max(a,Math.min(b,x));
 const ease=(x:number)=>x*x*(3-2*x);
 
