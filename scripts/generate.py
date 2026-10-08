@@ -6,7 +6,7 @@ from tts import synthesize
 from assets import search_pexels
 from manifest import build
 from quality import validate
-PROFILES={"youtube":{"width":1920,"height":1080,"fps":30},"shorts":{"width":1080,"height":1920,"fps":30},"square":{"width":1080,"height":1080,"fps":30},"4k":{"width":3840,"height":2160,"fps":30}}
+PROFILES={"youtube":{"width":1920,"height":1080,"fps":60}}
 def slug(s:str)->str:return re.sub(r"[^a-z0-9]+","-",s.lower()).strip("-")[:55] or "run"
 def main():
  p=argparse.ArgumentParser(description="Generate an editorially planned documentary video.")
