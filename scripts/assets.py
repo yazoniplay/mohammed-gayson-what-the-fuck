@@ -4,20 +4,69 @@ from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
 
+def _pexels_key()->str:
+    key=os.getenv("PEXELS_API_KEY","").strip()
+    print(f"[pexels] key configured={'yes' if key else 'no'}")
+    return key
+
+def _get(url:str,key:str,params:dict)->dict:
+    r=requests.get(url,headers={"Authorization":key},params=params,timeout=45)
+    if not r.ok:
+        raise RuntimeError(f"Pexels HTTP {r.status_code}: {r.text[:240].replace(chr(10),' ')}")
+    return r.json()
+
 def _download(url,path):
-    data=requests.get(url,timeout=60);data.raise_for_status();path.write_bytes(data.content)
+    with requests.get(url,timeout=90,stream=True) as r:
+        r.raise_for_status()
+        with path.open("wb") as f:
+            for chunk in r.iter_content(chunk_size=1024*1024):
+                if chunk:f.write(chunk)
+
+def search_pexels_videos(query:str,out:Path,limit:int=2)->list[dict]:
+    key=_pexels_key()
+    if not key:
+        print("[pexels] no API key; skipping video search")
+        return []
+    out.mkdir(parents=True,exist_ok=True)
+    print(f"[pexels] video search: {query[:120]!r}")
+    data=_get("https://api.pexels.com/v1/videos/search",key,{"query":query[:180],"per_page":max(3,limit*3),"orientation":"landscape","size":"medium","locale":"en-US"})
+    videos=data.get("videos",[])
+    print(f"[pexels] video results={len(videos)} total={data.get('total_results',0)}")
+    result=[]
+    for video in videos:
+        files=[f for f in video.get("video_files",[]) if f.get("file_type")=="video/mp4" and f.get("link")]
+        files.sort(key=lambda f:(f.get("width",0)>=1280,f.get("width",0)*f.get("height",0),f.get("fps",0)),reverse=True)
+        chosen=files[0] if files else None
+        if not chosen: continue
+        vid=str(video.get("id"))
+        path=out/f"video-{vid}.mp4"
+        try:
+            if not path.exists(): _download(chosen["link"],path)
+            print(f"[pexels] selected video={vid} {chosen.get('width')}x{chosen.get('height')} duration={video.get('duration')}s bytes={path.stat().st_size}")
+            result.append({"id":f"pexels-video-{vid}","kind":"video","src":str(path),"credit":(video.get("user") or {}).get("name"),"license":"Pexels","score":1.0,"role":"b-roll","duration":float(video.get("duration") or 0),"width":chosen.get("width"),"height":chosen.get("height"),"fps":chosen.get("fps")})
+            if len(result)>=limit: break
+        except Exception as e:
+            print(f"[pexels] download failed video={vid}: {e}")
+    return result
 
 def search_pexels(query:str,out:Path,limit:int=3)->list[dict]:
-    key=os.getenv("PEXELS_API_KEY")
-    if not key:return []
+    key=_pexels_key()
+    if not key:
+        print("[pexels] no API key; skipping photo search")
+        return []
     out.mkdir(parents=True,exist_ok=True)
-    r=requests.get("https://api.pexels.com/v1/search",headers={"Authorization":key},params={"query":query,"per_page":max(1,limit),"orientation":"landscape"},timeout=30);r.raise_for_status()
+    print(f"[pexels] photo search: {query[:120]!r}")
+    data=_get("https://api.pexels.com/v1/search",key,{"query":query[:180],"per_page":max(1,limit),"orientation":"landscape","locale":"en-US"})
     result=[]
-    for p in r.json().get("photos",[]):
+    for p in data.get("photos",[]):
         src=p.get("src",{}).get("large2x") or p.get("src",{}).get("large")
-        if not src:continue
-        path=out/f"photo-{p['id']}.jpg";_download(src,path)
-        result.append({"id":str(p["id"]),"kind":"photo","src":str(path),"credit":p.get("photographer"),"license":"Pexels","score":1.0,"role":"b-roll"})
+        if not src: continue
+        path=out/f"photo-{p['id']}.jpg"
+        try:
+            _download(src,path)
+            result.append({"id":str(p["id"]),"kind":"photo","src":str(path),"credit":p.get("photographer"),"license":"Pexels","score":1.0,"role":"b-roll"})
+        except Exception as e:
+            print(f"[pexels] photo download failed id={p.get('id')}: {e}")
     return result
 
 def make_asset_plan(sentence:str,editorial:dict|None=None)->list[dict]:
