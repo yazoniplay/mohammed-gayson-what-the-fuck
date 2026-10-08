@@ -45,5 +45,18 @@ def main():
  errors=validate(str(manifest))
  if errors:raise SystemExit("QUALITY GATE FAILED:\n"+"\n".join(errors))
  print(f"READY: {manifest}")
- if not a.no_render:subprocess.run(["npx","remotion","render","src/index.tsx","JackPocketsVideo",f"out/{slug(a.topic)}.mp4","--props",str(manifest)],check=True)
+ if not a.no_render:
+  out=Path("out")/f"{slug(a.topic)}.mp4"
+  subprocess.run(["npx","remotion","render","src/index.tsx","JackPocketsVideo",str(out),"--props",str(manifest)],check=True)
+  probe=subprocess.run(["ffprobe","-v","error","-show_entries","stream=codec_type,width,height,r_frame_rate","-show_entries","format=duration","-of","json",str(out)],capture_output=True,text=True,check=True)
+  info=json.loads(probe.stdout);streams=info.get("streams",[])
+  video=next((s for s in streams if s.get("codec_type")=="video"),None)
+  audio=next((s for s in streams if s.get("codec_type")=="audio"),None)
+  if not video or not audio:raise SystemExit("FINAL QC FAILED: missing video or audio stream")
+  if video.get("width")!=1920 or video.get("height")!=1080:raise SystemExit("FINAL QC FAILED: output is not 1920x1080")
+  if video.get("r_frame_rate")!="60/1":raise SystemExit("FINAL QC FAILED: output is not 60 FPS")
+  duration=float(info.get("format",{}).get("duration",0))
+  if duration<480 or duration>1800:raise SystemExit(f"FINAL QC FAILED: duration {duration:.2f}s outside 8-30 minute range")
+  print(f"FINAL QC PASSED: {out} | {duration:.2f}s | 1920x1080 | 60fps | audio=yes")
+
 if __name__=="__main__":main()
