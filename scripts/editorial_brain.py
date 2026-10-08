@@ -14,8 +14,7 @@ def keywords(s:str)->list[str]:
     words=re.findall(r"[A-Za-z0-9][A-Za-z0-9'’-]{2,}",s)
     return list(dict.fromkeys(w.lower() for w in words if w.lower() not in STOP))[:6]
 def _span(sentence,words,pos):
-    target=re.findall(r"[a-z0-9]+",sentence.lower()); flat=[re.findall(r"[a-z0-9]+",str(w.get("word","")).lower()) for w in words]
-    flat=[x[0] for x in flat if x]
+    target=re.findall(r"[a-z0-9]+",sentence.lower()); flat=[re.sub(r"[^a-z0-9]","",str(w.get("word","")).lower()) for w in words]
     for i in range(pos,len(flat)):
         if flat[i:i+len(target)]==target:return i,i+len(target)
     return pos,min(len(words),pos+max(1,len(target)))
