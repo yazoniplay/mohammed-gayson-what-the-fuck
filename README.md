@@ -4,11 +4,31 @@ An automated documentary editor built around editorial decisions rather than sli
 
 The system uses narration as the timeline backbone, classifies each sentence, selects a visual intent, creates shot boundaries, builds layered compositions, and validates the resulting timeline before rendering.
 
-It targets the broad craft of modern fast-paced documentary/video-essay editing: evidence-led visuals, kinetic typography, punch-ins, annotations, controlled transitions, deliberate reveals and sound-aware rhythm. It does not reproduce any named creator's exact signature style.
+## AI providers
+
+Gemini is now a first-class provider.
+
+Set:
+
+```env
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=your_key
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_EDITOR_MODEL=gemini-2.5-flash
+```
+
+With `LLM_PROVIDER=auto`, the pipeline tries Gemini first, then OpenAI, then Anthropic when configured.
+
+Gemini is used for two jobs:
+
+1. **Story architect** — builds the documentary structure and narration plan.
+2. **Editorial refinement** — analyzes beats for sentence-level intent, important words and visual roles.
+
+This is deliberately a provider layer: the renderer remains deterministic and the AI produces editorial decisions rather than directly generating arbitrary code.
 
 ## Pipeline
 
-TOPIC → RESEARCH → STORY → NARRATION → WORD ALIGNMENT → EDITORIAL BRAIN → ASSET PLAN → SHOT PLAN → QUALITY GATE → REMOTION
+TOPIC → GEMINI/LLM STORY → NARRATION → WORD ALIGNMENT → EDITORIAL BRAIN → GEMINI BEAT REFINEMENT → ASSET PLAN → SHOT PLAN → QUALITY GATE → REMOTION
 
 ## Run
 
@@ -27,7 +47,5 @@ npm run generate -- --topic "..." --profile shorts
 npm run generate -- --topic "..." --profile square
 npm run generate -- --topic "..." --profile 4k
 ```
-
-Optional providers: OPENAI_API_KEY or ANTHROPIC_API_KEY, ELEVENLABS_API_KEY + ELEVENLABS_VOICE_ID, PEXELS_API_KEY and TAVILY_API_KEY.
 
 No copyrighted media is bundled. Use assets you have rights to use.
