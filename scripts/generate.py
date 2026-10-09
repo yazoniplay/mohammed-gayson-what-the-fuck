@@ -27,29 +27,40 @@ def main():
  subprocess.run(["python","scripts/audio_aligner.py",str(audio),"--out",str(root/"alignment.json")],check=True)
  words=json.loads((root/"alignment.json").read_text());asset_sets=[]
  for i,b in enumerate(plan.get("beats",[])):
-  aset=[]
+  # Stock footage must come first: build_shots selects assets by index, so generated
+  # cards placed first can otherwise crowd out every downloaded video in short beats.
+  stock_assets=[]
+  generated_assets=[]
   editorial=b.get("editorial") or {}
   narration=str(b.get("narration",""))
+  photo_queries=list(dict.fromkeys((b.get("keywords") or [a.topic]) + [narration[:160]]))
+  for q in photo_queries[:max(1,a.assets_per_beat)]:
+   try:
+    videos=search_pexels_videos(str(q),root/f"assets-{i}",limit=1)
+    if videos:
+     for item in videos:
+      item["src"]=str(Path(item["src"]).relative_to("public")).replace("\\","/")
+      stock_assets.append(item)
+     continue
+    print(f"[pexels] no video result for query={str(q)[:80]!r}; trying photos")
+   except Exception as e:
+    print(f"[pexels] video search failed: {e}; trying photo fallback")
+   try:
+    photos=search_pexels(str(q),root/f"assets-{i}",limit=1)
+    for item in photos:
+     item["src"]=str(Path(item["src"]).relative_to("public")).replace("\\","/")
+     stock_assets.append(item)
+   except Exception as e:
+    print(f"[pexels] photo search failed: {e}")
   roles=make_asset_plan(narration,editorial)
   generated_dir=root/"generated"
   for j,r in enumerate(roles):
    item=generate_role_asset(r["role"],narration,generated_dir,research,i*10+j)
    if item:
     item["src"]=str(Path(item["src"]).relative_to("public")).replace("\\","/")
-    aset.append(item)
-  photo_queries=list(dict.fromkeys((b.get("keywords") or [a.topic]) + [narration[:160]]))
-  for q in photo_queries[:max(1,a.assets_per_beat)]:
-   try:
-    videos=search_pexels_videos(str(q),root/f"assets-{i}",limit=1)
-    for item in videos:
-     item["src"]=str(Path(item["src"]).relative_to("public")).replace("\\","/")
-     aset.append(item)
-    if not videos:
-     for item in search_pexels(str(q),root/f"assets-{i}",limit=1):
-      item["src"]=str(Path(item["src"]).relative_to("public")).replace("\\","/")
-      aset.append(item)
-   except Exception as e:
-    print(f"[pexels] query failed: {e}; falling back to generated assets")
+    generated_assets.append(item)
+  aset=stock_assets+generated_assets
+  print(f"[assets] beat={i+1} stock_video={sum(x.get('kind')=='video' for x in stock_assets)} stock_photo={sum(x.get('kind')=='photo' for x in stock_assets)} generated={len(generated_assets)}")
   asset_sets.append(aset)
  manifest=build(plan,str(audio.relative_to("public")).replace("\\","/"),words,asset_sets,PROFILES[a.profile],root/"manifest.json")
  errors=validate(str(manifest))
